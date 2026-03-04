@@ -20,6 +20,10 @@ export interface Link {
   thumbnail_url: string | null;
   sort_order: number;
   is_active: boolean;
+  scheduled_start: string | null;
+  scheduled_end: string | null;
+  type: "link" | "embed";
+  embed_platform: "youtube" | "spotify" | "twitter" | "tiktok" | "soundcloud" | null;
   created_at: string;
   updated_at: string;
 }

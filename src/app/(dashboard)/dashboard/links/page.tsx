@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { LinkManager } from "@/components/dashboard/link-manager";
+import { SocialLinksManager } from "@/components/dashboard/social-links-manager";
+import { Separator } from "@/components/ui/separator";
 
 export default async function LinksPage() {
   const supabase = await createClient();
@@ -9,6 +11,12 @@ export default async function LinksPage() {
 
   const { data: links } = await supabase
     .from("links")
+    .select("*")
+    .eq("user_id", user!.id)
+    .order("sort_order", { ascending: true });
+
+  const { data: socialLinks } = await supabase
+    .from("social_links")
     .select("*")
     .eq("user_id", user!.id)
     .order("sort_order", { ascending: true });
@@ -23,6 +31,13 @@ export default async function LinksPage() {
       </div>
 
       <LinkManager initialLinks={links ?? []} userId={user!.id} />
+
+      <Separator />
+
+      <SocialLinksManager
+        initialLinks={socialLinks ?? []}
+        userId={user!.id}
+      />
     </div>
   );
 }

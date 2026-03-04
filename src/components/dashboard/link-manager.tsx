@@ -6,6 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -30,10 +39,26 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Plus, Pencil, Trash2, ExternalLink } from "lucide-react";
+import { GripVertical, Plus, Pencil, Trash2, ExternalLink, Clock, X } from "lucide-react";
 import type { Link } from "@/types/database";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
+import { detectPlatform } from "@/lib/embed-utils";
+
+type EmbedPlatform = "youtube" | "spotify" | "twitter" | "tiktok" | "soundcloud";
+
+function getScheduleStatus(link: Link): { label: string; variant: "outline" | "destructive" | "default" } | null {
+  if (!link.scheduled_start && !link.scheduled_end) return null;
+  const now = new Date();
+  if (link.scheduled_start && new Date(link.scheduled_start) > now) {
+    return { label: "Scheduled", variant: "outline" };
+  }
+  if (link.scheduled_end && new Date(link.scheduled_end) < now) {
+    return { label: "Expired", variant: "destructive" };
+  }
+  return { label: "Live", variant: "default" };
+}
 
 function SortableLinkItem({
   link,
@@ -60,6 +85,8 @@ function SortableLinkItem({
     transition,
   };
 
+  const scheduleStatus = getScheduleStatus(link);
+
   return (
     <div
       ref={setNodeRef}
@@ -85,7 +112,20 @@ function SortableLinkItem({
       )}
 
       <div className="flex-1 min-w-0">
-        <p className="font-medium truncate">{link.title}</p>
+        <div className="flex items-center gap-2">
+          <p className="font-medium truncate">{link.title}</p>
+          {link.type === "embed" && link.embed_platform && (
+            <Badge variant="secondary" className="shrink-0 text-xs">
+              {link.embed_platform}
+            </Badge>
+          )}
+          {scheduleStatus && (
+            <Badge variant={scheduleStatus.variant} className="shrink-0 text-xs">
+              <Clock className="mr-1 h-3 w-3" />
+              {scheduleStatus.label}
+            </Badge>
+          )}
+        </div>
         <p className="text-sm text-muted-foreground truncate">{link.url}</p>
       </div>
 
@@ -128,6 +168,10 @@ export function LinkManager({
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [thumbnailUrl, setThumbnailUrl] = useState("");
+  const [scheduledStart, setScheduledStart] = useState<Date | null>(null);
+  const [scheduledEnd, setScheduledEnd] = useState<Date | null>(null);
+  const [linkType, setLinkType] = useState<"link" | "embed">("link");
+  const [embedPlatform, setEmbedPlatform] = useState<EmbedPlatform | "">("");
   const [saving, setSaving] = useState(false);
   const supabase = createClient();
   const router = useRouter();
@@ -144,6 +188,10 @@ export function LinkManager({
     setTitle("");
     setUrl("");
     setThumbnailUrl("");
+    setScheduledStart(null);
+    setScheduledEnd(null);
+    setLinkType("link");
+    setEmbedPlatform("");
     setDialogOpen(true);
   }
 
@@ -152,21 +200,45 @@ export function LinkManager({
     setTitle(link.title);
     setUrl(link.url);
     setThumbnailUrl(link.thumbnail_url || "");
+    setScheduledStart(link.scheduled_start ? new Date(link.scheduled_start) : null);
+    setScheduledEnd(link.scheduled_end ? new Date(link.scheduled_end) : null);
+    setLinkType(link.type);
+    setEmbedPlatform(link.embed_platform || "");
     setDialogOpen(true);
+  }
+
+  function handleUrlChange(newUrl: string) {
+    setUrl(newUrl);
+    if (linkType === "embed" && newUrl.trim()) {
+      const detected = detectPlatform(newUrl.trim());
+      if (detected) {
+        setEmbedPlatform(detected);
+      }
+    }
   }
 
   async function handleSave() {
     if (!title.trim() || !url.trim()) return;
+    if (linkType === "embed" && !embedPlatform) {
+      toast.error("Please select an embed platform");
+      return;
+    }
     setSaving(true);
+
+    const saveData = {
+      title: title.trim(),
+      url: url.trim(),
+      thumbnail_url: linkType === "link" ? (thumbnailUrl.trim() || null) : null,
+      scheduled_start: scheduledStart?.toISOString() || null,
+      scheduled_end: scheduledEnd?.toISOString() || null,
+      type: linkType,
+      embed_platform: linkType === "embed" && embedPlatform ? embedPlatform : null,
+    };
 
     if (editingLink) {
       const { error } = await supabase
         .from("links")
-        .update({
-          title: title.trim(),
-          url: url.trim(),
-          thumbnail_url: thumbnailUrl.trim() || null,
-        })
+        .update(saveData)
         .eq("id", editingLink.id);
 
       if (error) {
@@ -177,9 +249,7 @@ export function LinkManager({
 
       setLinks((prev) =>
         prev.map((l) =>
-          l.id === editingLink.id
-            ? { ...l, title: title.trim(), url: url.trim(), thumbnail_url: thumbnailUrl.trim() || null }
-            : l
+          l.id === editingLink.id ? { ...l, ...saveData } : l
         )
       );
       toast.success("Link updated");
@@ -189,9 +259,7 @@ export function LinkManager({
         .from("links")
         .insert({
           user_id: userId,
-          title: title.trim(),
-          url: url.trim(),
-          thumbnail_url: thumbnailUrl.trim() || null,
+          ...saveData,
           sort_order: newSortOrder,
         })
         .select()
@@ -262,6 +330,8 @@ export function LinkManager({
     }
   }
 
+  const isSaveDisabled = saving || !title.trim() || !url.trim() || (linkType === "embed" && !embedPlatform);
+
   return (
     <div className="space-y-4">
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -271,40 +341,119 @@ export function LinkManager({
             Add Link
           </Button>
         </DialogTrigger>
-        <DialogContent>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingLink ? "Edit Link" : "Add New Link"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
+            {/* Type Toggle */}
+            <Tabs
+              value={linkType}
+              onValueChange={(v) => {
+                setLinkType(v as "link" | "embed");
+                if (v === "link") setEmbedPlatform("");
+              }}
+            >
+              <TabsList className="w-full">
+                <TabsTrigger value="link" className="flex-1">Link</TabsTrigger>
+                <TabsTrigger value="embed" className="flex-1">Embed</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
             <div className="space-y-2">
               <Label htmlFor="link-title">Title</Label>
               <Input
                 id="link-title"
-                placeholder="My Website"
+                placeholder={linkType === "embed" ? "My YouTube Video" : "My Website"}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
               />
             </div>
+
+            {linkType === "embed" && (
+              <div className="space-y-2">
+                <Label>Platform</Label>
+                <Select
+                  value={embedPlatform}
+                  onValueChange={(v) => setEmbedPlatform(v as EmbedPlatform)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select platform" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="youtube">YouTube</SelectItem>
+                    <SelectItem value="spotify">Spotify</SelectItem>
+                    <SelectItem value="twitter">Twitter / X</SelectItem>
+                    <SelectItem value="tiktok">TikTok</SelectItem>
+                    <SelectItem value="soundcloud">SoundCloud</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="link-url">URL</Label>
               <Input
                 id="link-url"
-                placeholder="https://example.com"
+                placeholder={linkType === "embed" ? "https://youtube.com/watch?v=..." : "https://example.com"}
                 value={url}
-                onChange={(e) => setUrl(e.target.value)}
+                onChange={(e) => handleUrlChange(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="link-thumb">Thumbnail URL (optional)</Label>
-              <Input
-                id="link-thumb"
-                placeholder="https://example.com/image.png"
-                value={thumbnailUrl}
-                onChange={(e) => setThumbnailUrl(e.target.value)}
-              />
+
+            {linkType === "link" && (
+              <div className="space-y-2">
+                <Label htmlFor="link-thumb">Thumbnail URL (optional)</Label>
+                <Input
+                  id="link-thumb"
+                  placeholder="https://example.com/image.png"
+                  value={thumbnailUrl}
+                  onChange={(e) => setThumbnailUrl(e.target.value)}
+                />
+              </div>
+            )}
+
+            {/* Schedule Section */}
+            <div className="space-y-3 rounded-lg border border-border p-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Schedule (optional)</Label>
+                {(scheduledStart || scheduledEnd) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto py-1 px-2 text-xs text-muted-foreground"
+                    onClick={() => {
+                      setScheduledStart(null);
+                      setScheduledEnd(null);
+                    }}
+                  >
+                    <X className="mr-1 h-3 w-3" />
+                    Clear schedule
+                  </Button>
+                )}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Start</Label>
+                  <DateTimePicker
+                    value={scheduledStart}
+                    onChange={setScheduledStart}
+                    placeholder="Start date"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">End</Label>
+                  <DateTimePicker
+                    value={scheduledEnd}
+                    onChange={setScheduledEnd}
+                    placeholder="End date"
+                  />
+                </div>
+              </div>
             </div>
+
             <div className="flex justify-end gap-2">
               <Button
                 variant="outline"
@@ -312,8 +461,8 @@ export function LinkManager({
               >
                 Cancel
               </Button>
-              <Button onClick={handleSave} disabled={saving || !title.trim() || !url.trim()}>
-                {saving ? "Saving..." : editingLink ? "Update" : "Add Link"}
+              <Button onClick={handleSave} disabled={isSaveDisabled}>
+                {saving ? "Saving..." : editingLink ? "Update" : linkType === "embed" ? "Add Embed" : "Add Link"}
               </Button>
             </div>
           </div>

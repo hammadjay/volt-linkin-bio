@@ -54,11 +54,14 @@ export default async function UserProfilePage({ params }: Props) {
     notFound();
   }
 
+  const now = new Date().toISOString();
   const { data: links } = await supabase
     .from("links")
     .select("*")
     .eq("user_id", profile.id)
     .eq("is_active", true)
+    .or(`scheduled_start.is.null,scheduled_start.lte.${now}`)
+    .or(`scheduled_end.is.null,scheduled_end.gte.${now}`)
     .order("sort_order", { ascending: true });
 
   const { data: socialLinks } = await supabase

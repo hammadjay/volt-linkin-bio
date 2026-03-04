@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import type { Profile, Theme, Link, SocialLink } from "@/types/database";
 import { SocialIcon } from "@/components/profile/social-icon";
+import { EmbedBlock } from "@/components/profile/embed-block";
 
 function detectDeviceType(): "mobile" | "desktop" | "tablet" {
   if (typeof window === "undefined") return "desktop";
@@ -125,33 +126,37 @@ export function ProfilePage({
           </div>
         )}
 
-        {/* Links */}
+        {/* Links & Embeds */}
         <div className="space-y-3">
-          {links.map((link) => (
-            <a
-              key={link.id}
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => handleLinkClick(link.id)}
-              className="flex items-center gap-3 w-full px-5 py-4 text-center font-medium transition-all hover:scale-[1.02] hover:shadow-lg"
-              style={{
-                backgroundColor: cardBg,
-                color: cardTextColor,
-                borderRadius: btnRadius,
-                backdropFilter: "blur(10px)",
-              }}
-            >
-              {link.thumbnail_url && (
-                <img
-                  src={link.thumbnail_url}
-                  alt=""
-                  className="h-8 w-8 rounded-md object-cover shrink-0"
-                />
-              )}
-              <span className="flex-1">{link.title}</span>
-            </a>
-          ))}
+          {links.map((link) =>
+            link.type === "embed" ? (
+              <EmbedBlock key={link.id} link={link} />
+            ) : (
+              <a
+                key={link.id}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => handleLinkClick(link.id)}
+                className="flex items-center gap-3 w-full px-5 py-4 text-center font-medium transition-all hover:scale-[1.02] hover:shadow-lg"
+                style={{
+                  backgroundColor: cardBg,
+                  color: cardTextColor,
+                  borderRadius: btnRadius,
+                  backdropFilter: "blur(10px)",
+                }}
+              >
+                {link.thumbnail_url && (
+                  <img
+                    src={link.thumbnail_url}
+                    alt=""
+                    className="h-8 w-8 rounded-md object-cover shrink-0"
+                  />
+                )}
+                <span className="flex-1">{link.title}</span>
+              </a>
+            )
+          )}
         </div>
 
         {/* Footer */}
