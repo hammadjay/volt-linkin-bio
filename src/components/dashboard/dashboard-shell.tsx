@@ -16,10 +16,13 @@ import {
   Menu,
   ExternalLink,
   LayoutDashboard,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { Profile } from "@/types/database";
 import { toast } from "sonner";
 import { useState } from "react";
+import { useTheme } from "next-themes";
 
 const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -67,6 +70,7 @@ export function DashboardShell({
   const router = useRouter();
   const supabase = createClient();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   async function handleLogout() {
     const { error } = await supabase.auth.signOut();
@@ -101,14 +105,26 @@ export function DashboardShell({
         </div>
 
         <div className="border-t border-border p-3 space-y-2">
-          <Link
-            href={`/${profile.username}`}
-            target="_blank"
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
-          >
-            <ExternalLink className="h-4 w-4" />
-            View my page
-          </Link>
+          <div className="flex items-center justify-between rounded-lg px-3 py-2">
+            <Link
+              href={`/${profile.username}`}
+              target="_blank"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ExternalLink className="h-4 w-4" />
+              View my page
+            </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              <Sun className="h-4 w-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
+              <span className="sr-only">Toggle theme</span>
+            </Button>
+          </div>
           <div className="flex items-center gap-3 px-3 py-2">
             <Avatar className="h-8 w-8">
               <AvatarImage src={profile.avatar_url || undefined} />
@@ -162,7 +178,16 @@ export function DashboardShell({
             </div>
           </SheetContent>
         </Sheet>
-        <span className="font-bold">Volt</span>
+        <span className="font-bold flex-1">Volt</span>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        >
+          <Sun className="h-4 w-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
+          <span className="sr-only">Toggle theme</span>
+        </Button>
       </header>
 
       {/* Main content */}
