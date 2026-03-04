@@ -124,3 +124,145 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ── Landing page animations ── */
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-16px); }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(1deg); }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.05); }
+}
+
+@keyframes pulse-glow-slow {
+  0%, 100% { opacity: 0.2; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.1); }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-float { animation: float 5s ease-in-out infinite; }
+.animate-float-slow { animation: float-slow 7s ease-in-out infinite; }
+.animate-gradient-shift {
+  background-size: 200% 200%;
+  animation: gradient-shift 4s ease-in-out infinite;
+}
+.animate-pulse-glow { animation: pulse-glow 4s ease-in-out infinite; }
+.animate-pulse-glow-slow { animation: pulse-glow-slow 6s ease-in-out infinite; }
+.animate-marquee { animation: marquee 30s linear infinite; }
+.animate-spin-slow { animation: spin-slow 20s linear infinite; }
+
+/* Scroll-triggered animations via animation-timeline */
+.animate-on-scroll {
+  opacity: 0;
+  animation: fade-in-up 0.8s ease-out forwards;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
+}
+
+.animate-on-scroll-left {
+  opacity: 0;
+  animation: slide-in-left 0.8s ease-out forwards;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
+}
+
+.animate-on-scroll-right {
+  opacity: 0;
+  animation: slide-in-right 0.8s ease-out forwards;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
+}
+
+.animate-on-scroll-scale {
+  opacity: 0;
+  animation: scale-in 0.8s ease-out forwards;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
+}
+
+/* Stagger delays for card grids */
+.stagger-1 { animation-delay: 0ms; }
+.stagger-2 { animation-delay: 80ms; }
+.stagger-3 { animation-delay: 160ms; }
+.stagger-4 { animation-delay: 240ms; }
+.stagger-5 { animation-delay: 320ms; }
+.stagger-6 { animation-delay: 400ms; }
+.stagger-7 { animation-delay: 480ms; }
+.stagger-8 { animation-delay: 560ms; }
+.stagger-9 { animation-delay: 640ms; }
+
+/* Fallback for browsers without animation-timeline support */
+@supports not (animation-timeline: view()) {
+  .animate-on-scroll,
+  .animate-on-scroll-left,
+  .animate-on-scroll-right,
+  .animate-on-scroll-scale {
+    opacity: 1;
+    animation: none;
+  }
+}
+
+/* Glass card effect */
+.glass-card {
+  background: oklch(1 0 0 / 3%);
+  backdrop-filter: blur(12px);
+  border: 1px solid oklch(1 0 0 / 8%);
+}
+
+:root .glass-card {
+  background: oklch(0 0 0 / 3%);
+  border-color: oklch(0 0 0 / 8%);
+}
+
+.dark .glass-card {
+  background: oklch(1 0 0 / 3%);
+  border-color: oklch(1 0 0 / 8%);
+}
