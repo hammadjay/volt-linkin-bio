@@ -13,7 +13,7 @@ import type { Profile } from "@/types/database";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Switch } from "@/components/ui/switch";
-import { Upload } from "lucide-react";
+import { Upload, Globe, Search } from "lucide-react";
 
 export function SettingsForm({
   profile,
@@ -29,6 +29,9 @@ export function SettingsForm({
   const [showStats, setShowStats] = useState(profile.show_stats);
   const [showEmailSignup, setShowEmailSignup] = useState(profile.show_email_signup);
   const [emailSignupText, setEmailSignupText] = useState(profile.email_signup_text || "");
+  const [seoTitle, setSeoTitle] = useState(profile.seo_title || "");
+  const [seoDescription, setSeoDescription] = useState(profile.seo_description || "");
+  const [seoImage, setSeoImage] = useState(profile.seo_image || "");
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -64,6 +67,9 @@ export function SettingsForm({
         show_stats: showStats,
         show_email_signup: showEmailSignup,
         email_signup_text: emailSignupText.trim() || null,
+        seo_title: seoTitle.trim() || null,
+        seo_description: seoDescription.trim() || null,
+        seo_image: seoImage.trim() || null,
       })
       .eq("id", profile.id);
 
@@ -242,6 +248,107 @@ export function SettingsForm({
               />
             </div>
           )}
+          <Button onClick={handleSaveProfile} disabled={saving}>
+            {saving ? "Saving..." : "Save changes"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>SEO & Social Sharing</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="seo-title">SEO Title</Label>
+                <Input
+                  id="seo-title"
+                  value={seoTitle}
+                  onChange={(e) => setSeoTitle(e.target.value)}
+                  placeholder={`${displayName || username} | Volt`}
+                  maxLength={70}
+                />
+                <p className="text-xs text-muted-foreground">{seoTitle.length}/70</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="seo-description">Meta Description</Label>
+                <Textarea
+                  id="seo-description"
+                  value={seoDescription}
+                  onChange={(e) => setSeoDescription(e.target.value)}
+                  placeholder={bio || `Check out ${displayName || username}'s links on Volt`}
+                  maxLength={160}
+                  rows={3}
+                />
+                <p className="text-xs text-muted-foreground">{seoDescription.length}/160</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="seo-image">OG Image URL</Label>
+                <Input
+                  id="seo-image"
+                  value={seoImage}
+                  onChange={(e) => setSeoImage(e.target.value)}
+                  placeholder="https://example.com/image.png"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {/* Google Search Preview */}
+              <div className="space-y-2">
+                <p className="text-sm font-medium flex items-center gap-1.5">
+                  <Search className="h-4 w-4" />
+                  Google Search Preview
+                </p>
+                <div className="rounded-lg border border-border p-4 bg-white dark:bg-zinc-900 space-y-1">
+                  <p className="text-sm text-muted-foreground truncate">
+                    volt.link/{username}
+                  </p>
+                  <p className="text-blue-600 dark:text-blue-400 font-medium truncate">
+                    {seoTitle || `${displayName || username} | Volt`}
+                  </p>
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {seoDescription || bio || `Check out ${displayName || username}'s links on Volt`}
+                  </p>
+                </div>
+              </div>
+
+              {/* Social Share Preview */}
+              <div className="space-y-2">
+                <p className="text-sm font-medium flex items-center gap-1.5">
+                  <Globe className="h-4 w-4" />
+                  Social Share Preview
+                </p>
+                <div className="rounded-lg border border-border overflow-hidden bg-white dark:bg-zinc-900">
+                  {(seoImage || avatarUrl) ? (
+                    <div className="h-32 bg-muted flex items-center justify-center overflow-hidden">
+                      <img
+                        src={seoImage || avatarUrl}
+                        alt="OG Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-32 bg-muted flex items-center justify-center">
+                      <span className="text-xs text-muted-foreground">No image set</span>
+                    </div>
+                  )}
+                  <div className="p-3 space-y-1">
+                    <p className="text-xs text-muted-foreground uppercase">volt.link</p>
+                    <p className="font-medium text-sm truncate">
+                      {seoTitle || `${displayName || username} | Volt`}
+                    </p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                      {seoDescription || bio || `Check out ${displayName || username}'s links on Volt`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <Button onClick={handleSaveProfile} disabled={saving}>
             {saving ? "Saving..." : "Save changes"}
           </Button>

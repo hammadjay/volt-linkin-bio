@@ -13,6 +13,10 @@ export interface Profile {
   email_signup_text: string | null;
   card_bg_override: string | null;
   card_text_override: string | null;
+  seo_title: string | null;
+  seo_description: string | null;
+  seo_image: string | null;
+  animation_type: "none" | "gradient" | "particles" | "float";
   created_at: string;
   updated_at: string;
 }

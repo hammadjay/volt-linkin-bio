@@ -10,6 +10,13 @@ import type { Profile, Theme, Link } from "@/types/database";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 function ProfilePreview({
   profile,
@@ -20,6 +27,7 @@ function ProfilePreview({
   buttonStyle,
   cardBgOverride,
   cardTextOverride,
+  animationType,
 }: {
   profile: Profile;
   theme: Theme | null;
@@ -29,6 +37,7 @@ function ProfilePreview({
   buttonStyle: string;
   cardBgOverride: string;
   cardTextOverride: string;
+  animationType: string;
 }) {
   const bg = backgroundOverride || theme?.background_value || "#0f0f23";
   const textColor = theme?.text_color || "#ffffff";
@@ -42,58 +51,91 @@ function ProfilePreview({
     sharp: "0",
   };
 
+  const showGradientAnim = animationType === "gradient" && isGradient;
+  const resolvedAccent = accentColor || theme?.accent_color || "#8b5cf6";
+
+  const linkItems = links.length > 0
+    ? links.map((link) => ({ key: link.id, label: link.title }))
+    : [{ key: "w", label: "My Website" }, { key: "p", label: "Portfolio" }, { key: "c", label: "Contact" }];
+
   return (
     <div
       className="w-full max-w-xs mx-auto rounded-2xl overflow-hidden border border-border"
       style={{ minHeight: 400 }}
     >
       <div
-        className="p-6 flex flex-col items-center gap-4"
+        className="p-6 flex flex-col items-center gap-4 relative overflow-hidden"
         style={{
-          background: isGradient ? bg : bg,
-          backgroundColor: !isGradient ? bg : undefined,
+          ...(isGradient
+            ? {
+                backgroundImage: bg,
+                ...(showGradientAnim
+                  ? { backgroundSize: "200% 200%", animation: "gradient-shift 4s ease-in-out infinite" }
+                  : {}),
+              }
+            : { backgroundColor: bg }),
           color: textColor,
           minHeight: 400,
         }}
       >
+        {/* Particles in preview */}
+        {animationType === "particles" && (
+          <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={i}
+                className="absolute rounded-full"
+                style={{
+                  backgroundColor: resolvedAccent,
+                  width: `${6 + (i % 3) * 4}px`,
+                  height: `${6 + (i % 3) * 4}px`,
+                  left: `${10 + (i * 12) % 80}%`,
+                  bottom: `-5%`,
+                  filter: "blur(1px)",
+                  opacity: 0,
+                  animation: `profile-particle ${5 + (i % 3) * 2}s ease-in-out infinite`,
+                  animationDelay: `${i * 0.6}s`,
+                }}
+              />
+            ))}
+          </div>
+        )}
+
         <div
-          className="h-16 w-16 rounded-full flex items-center justify-center text-xl font-bold"
-          style={{ backgroundColor: accentColor || theme?.accent_color || "#8b5cf6" }}
+          className="h-16 w-16 rounded-full flex items-center justify-center text-xl font-bold relative z-10"
+          style={{
+            backgroundColor: resolvedAccent,
+            ...(animationType === "float"
+              ? { animation: "profile-avatar-float 4s ease-in-out infinite" }
+              : {}),
+          }}
         >
           {(profile.display_name || profile.username)?.[0]?.toUpperCase()}
         </div>
-        <div className="text-center">
+        <div className="text-center relative z-10">
           <p className="font-bold">{profile.display_name || profile.username}</p>
           <p className="text-sm opacity-70">{profile.bio || "Your bio here"}</p>
         </div>
-        <div className="w-full space-y-2 mt-2">
-          {links.length > 0
-            ? links.map((link) => (
-                <div
-                  key={link.id}
-                  className="w-full px-4 py-3 text-center text-sm font-medium"
-                  style={{
-                    backgroundColor: cardBg,
-                    color: cardTextColor,
-                    borderRadius: borderRadiusMap[buttonStyle] || "0.5rem",
-                  }}
-                >
-                  {link.title}
-                </div>
-              ))
-            : ["My Website", "Portfolio", "Contact"].map((label) => (
-                <div
-                  key={label}
-                  className="w-full px-4 py-3 text-center text-sm font-medium"
-                  style={{
-                    backgroundColor: cardBg,
-                    color: cardTextColor,
-                    borderRadius: borderRadiusMap[buttonStyle] || "0.5rem",
-                  }}
-                >
-                  {label}
-                </div>
-              ))}
+        <div className="w-full space-y-2 mt-2 relative z-10">
+          {linkItems.map((item, i) => (
+            <div
+              key={item.key}
+              className="w-full px-4 py-3 text-center text-sm font-medium"
+              style={{
+                backgroundColor: cardBg,
+                color: cardTextColor,
+                borderRadius: borderRadiusMap[buttonStyle] || "0.5rem",
+                ...(animationType === "float"
+                  ? {
+                      animation: "profile-link-float 3s ease-in-out infinite",
+                      animationDelay: `${i * 0.15}s`,
+                    }
+                  : {}),
+              }}
+            >
+              {item.label}
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -119,6 +161,7 @@ export function AppearanceEditor({
   const [buttonStyle, setButtonStyle] = useState(profile.button_style || "rounded");
   const [cardBgOverride, setCardBgOverride] = useState(profile.card_bg_override || "");
   const [cardTextOverride, setCardTextOverride] = useState(profile.card_text_override || "");
+  const [animationType, setAnimationType] = useState<string>(profile.animation_type || "none");
   const [saving, setSaving] = useState(false);
   const supabase = createClient();
   const router = useRouter();
@@ -137,6 +180,7 @@ export function AppearanceEditor({
         button_style: buttonStyle,
         card_bg_override: cardBgOverride || null,
         card_text_override: cardTextOverride || null,
+        animation_type: animationType,
       })
       .eq("id", profile.id);
 
@@ -306,6 +350,21 @@ export function AppearanceEditor({
             </div>
 
             <div className="space-y-2">
+              <Label>Page Animation</Label>
+              <Select value={animationType} onValueChange={setAnimationType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="gradient">Gradient Shift</SelectItem>
+                  <SelectItem value="particles">Floating Particles</SelectItem>
+                  <SelectItem value="float">Float Effect</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <Label>Button Style</Label>
               <div className="grid grid-cols-3 gap-2">
                 {(["rounded", "pill", "sharp"] as const).map((style) => (
@@ -352,6 +411,7 @@ export function AppearanceEditor({
           buttonStyle={buttonStyle}
           cardBgOverride={cardBgOverride}
           cardTextOverride={cardTextOverride}
+          animationType={animationType}
         />
       </div>
     </div>

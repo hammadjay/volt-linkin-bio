@@ -14,28 +14,22 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { MousePointerClick, Eye, TrendingUp, Globe, ChevronRight } from "lucide-react";
-import { useRouter } from "next/navigation";
-import type { LinkClick, PageView } from "@/types/database";
+import { MousePointerClick, TrendingUp } from "lucide-react";
+import type { LinkClick } from "@/types/database";
 
 const COLORS = ["#8b5cf6", "#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#ec4899"];
 
 type DateRange = "7d" | "30d";
 
-export function AnalyticsDashboard({
+export function LinkAnalyticsDetail({
   clicks,
-  pageViews,
-  links,
-  totalClicks,
-  totalViews,
+  allTimeClicks,
+  linkTitle,
 }: {
   clicks: LinkClick[];
-  pageViews: PageView[];
-  links: { id: string; title: string }[];
-  totalClicks: number;
-  totalViews: number;
+  allTimeClicks: number;
+  linkTitle: string;
 }) {
-  const router = useRouter();
   const [range, setRange] = useState<DateRange>("30d");
 
   const cutoff = useMemo(() => {
@@ -50,15 +44,10 @@ export function AnalyticsDashboard({
     [clicks, cutoff]
   );
 
-  const filteredViews = useMemo(
-    () => pageViews.filter((v) => new Date(v.viewed_at) >= cutoff),
-    [pageViews, cutoff]
-  );
-
-  // Clicks per day chart data
+  // Clicks per day
   const dailyData = useMemo(() => {
     const days = range === "7d" ? 7 : 30;
-    const data: { date: string; clicks: number; views: number }[] = [];
+    const data: { date: string; clicks: number }[] = [];
 
     for (let i = days - 1; i >= 0; i--) {
       const d = new Date();
@@ -72,30 +61,11 @@ export function AnalyticsDashboard({
       const dayClicks = filteredClicks.filter(
         (c) => c.clicked_at.split("T")[0] === dateStr
       ).length;
-      const dayViews = filteredViews.filter(
-        (v) => v.viewed_at.split("T")[0] === dateStr
-      ).length;
 
-      data.push({ date: label, clicks: dayClicks, views: dayViews });
+      data.push({ date: label, clicks: dayClicks });
     }
     return data;
-  }, [filteredClicks, filteredViews, range]);
-
-  // Per-link breakdown
-  const linkBreakdown = useMemo(() => {
-    const map = new Map<string, number>();
-    filteredClicks.forEach((c) => {
-      map.set(c.link_id, (map.get(c.link_id) || 0) + 1);
-    });
-
-    return links
-      .map((link) => ({
-        id: link.id,
-        name: link.title,
-        clicks: map.get(link.id) || 0,
-      }))
-      .sort((a, b) => b.clicks - a.clicks);
-  }, [filteredClicks, links]);
+  }, [filteredClicks, range]);
 
   // Top referrers
   const referrers = useMemo(() => {
@@ -151,27 +121,16 @@ export function AnalyticsDashboard({
       </div>
 
       {/* Summary cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Clicks
+              All-Time Clicks
             </CardTitle>
             <MousePointerClick className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{totalClicks}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Views
-            </CardTitle>
-            <Eye className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{totalViews}</p>
+            <p className="text-3xl font-bold">{allTimeClicks}</p>
           </CardContent>
         </Card>
         <Card>
@@ -185,28 +144,17 @@ export function AnalyticsDashboard({
             <p className="text-3xl font-bold">{filteredClicks.length}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Views ({range})
-            </CardTitle>
-            <Globe className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{filteredViews.length}</p>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Clicks over time */}
       <Card>
         <CardHeader>
-          <CardTitle>Activity Over Time</CardTitle>
+          <CardTitle>Clicks Over Time</CardTitle>
         </CardHeader>
         <CardContent>
-          {filteredClicks.length === 0 && filteredViews.length === 0 ? (
+          {filteredClicks.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
-              No data yet. Share your page to start tracking.
+              No clicks in this period.
             </p>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
@@ -225,8 +173,12 @@ export function AnalyticsDashboard({
                     color: "hsl(var(--card-foreground))",
                   }}
                 />
-                <Bar dataKey="views" fill="#6366f1" radius={[4, 4, 0, 0]} name="Views" />
-                <Bar dataKey="clicks" fill="#8b5cf6" radius={[4, 4, 0, 0]} name="Clicks" />
+                <Bar
+                  dataKey="clicks"
+                  fill="#8b5cf6"
+                  radius={[4, 4, 0, 0]}
+                  name="Clicks"
+                />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -234,49 +186,6 @@ export function AnalyticsDashboard({
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Per-link breakdown */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Clicks by Link</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {linkBreakdown.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No click data yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {linkBreakdown.map((item, i) => {
-                  const maxClicks = linkBreakdown[0]?.clicks || 1;
-                  const pct = (item.clicks / maxClicks) * 100;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => router.push(`/dashboard/analytics/${item.id}`)}
-                      className="w-full text-left group cursor-pointer"
-                    >
-                      <div className="flex items-center justify-between text-sm mb-1">
-                        <span className="truncate font-medium">{item.name}</span>
-                        <span className="flex items-center gap-1 text-muted-foreground">
-                          {item.clicks}
-                          <ChevronRight className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </span>
-                      </div>
-                      <div className="h-2 rounded-full bg-muted">
-                        <div
-                          className="h-2 rounded-full"
-                          style={{
-                            width: `${pct}%`,
-                            backgroundColor: COLORS[i % COLORS.length],
-                          }}
-                        />
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
         {/* Top referrers */}
         <Card>
           <CardHeader>

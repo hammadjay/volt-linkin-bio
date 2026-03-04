@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, bio, avatar_url")
+    .select("display_name, bio, avatar_url, seo_title, seo_description, seo_image")
     .eq("username", username)
     .single();
 
@@ -21,8 +21,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: "Not Found" };
   }
 
-  const title = `${profile.display_name || username} | Volt`;
-  const description = profile.bio || `Check out ${profile.display_name || username}'s links on Volt`;
+  const title = profile.seo_title || `${profile.display_name || username} | Volt`;
+  const description =
+    profile.seo_description ||
+    profile.bio ||
+    `Check out ${profile.display_name || username}'s links on Volt`;
+  const ogImage = profile.seo_image || profile.avatar_url;
 
   return {
     title,
@@ -30,12 +34,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title,
       description,
-      images: profile.avatar_url ? [profile.avatar_url] : [],
+      images: ogImage ? [ogImage] : [],
     },
     twitter: {
-      card: "summary",
+      card: ogImage ? "summary_large_image" : "summary",
       title,
       description,
+      images: ogImage ? [ogImage] : [],
     },
   };
 }

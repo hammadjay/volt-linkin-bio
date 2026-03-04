@@ -266,3 +266,43 @@
   background: oklch(1 0 0 / 3%);
   border-color: oklch(1 0 0 / 8%);
 }
+
+/* ── Profile page animations ── */
+
+@keyframes profile-particle {
+  0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+  10% { opacity: 0.7; }
+  50% { transform: translateY(-50vh) translateX(30px) scale(1.3); opacity: 0.5; }
+  90% { opacity: 0; }
+  100% { transform: translateY(-100vh) translateX(-15px) scale(0.6); opacity: 0; }
+}
+
+@keyframes profile-link-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes profile-avatar-float {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-10px) scale(1.03); }
+}
+
+.animate-profile-link-float {
+  animation: profile-link-float 3s ease-in-out infinite;
+}
+
+.animate-profile-avatar-float {
+  animation: profile-avatar-float 4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-profile-link-float,
+  .animate-profile-avatar-float,
+  .animate-gradient-shift {
+    animation: none !important;
+  }
+
+  [style*="profile-particle"] {
+    animation: none !important;
+  }
+}

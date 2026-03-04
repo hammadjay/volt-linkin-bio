@@ -117,7 +117,15 @@ export function ProfilePage({
     setSubscribing(false);
   }
 
-  function renderLink(link: Link, isFeatured = false) {
+  const animationType = profile.animation_type || "none";
+  const floatLinkStyle = animationType === "float"
+    ? { animation: "profile-link-float 3s ease-in-out infinite" }
+    : {};
+  const floatAvatarStyle = animationType === "float"
+    ? { animation: "profile-avatar-float 4s ease-in-out infinite" }
+    : {};
+
+  function renderLink(link: Link, isFeatured = false, index = 0) {
     if (link.type === "header") {
       return (
         <div key={link.id} className="flex items-center gap-3 py-2">
@@ -152,6 +160,8 @@ export function ProfilePage({
           ...(isFeatured
             ? { boxShadow: `0 0 20px ${accentColor}40, 0 0 40px ${accentColor}20` }
             : {}),
+          ...floatLinkStyle,
+          ...(animationType === "float" ? { animationDelay: `${index * 0.15}s` } : {}),
         }}
       >
         {link.thumbnail_url && (
@@ -174,19 +184,53 @@ export function ProfilePage({
     );
   }
 
+  const showGradientAnim = animationType === "gradient" && isGradient;
+
   return (
     <div
-      className="min-h-screen flex flex-col items-center px-4 py-12"
+      className="min-h-screen flex flex-col items-center px-4 py-12 overflow-hidden relative"
       style={{
-        background: isGradient ? bg : undefined,
-        backgroundColor: !isGradient ? bg : undefined,
+        ...(isGradient
+          ? {
+              backgroundImage: bg,
+              ...(showGradientAnim
+                ? { backgroundSize: "200% 200%", animation: "gradient-shift 4s ease-in-out infinite" }
+                : {}),
+            }
+          : { backgroundColor: bg }),
         color: textColor,
         fontFamily: theme?.font_family
           ? `"${theme.font_family}", sans-serif`
           : undefined,
       }}
     >
-      <div className="w-full max-w-md space-y-6">
+      {/* Particles layer */}
+      {animationType === "particles" && (
+        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+          {Array.from({ length: 15 }).map((_, i) => {
+            const size = 10 + (i % 5) * 8;
+            return (
+              <div
+                key={i}
+                className="absolute rounded-full"
+                style={{
+                  backgroundColor: accentColor,
+                  opacity: 0,
+                  width: `${size}px`,
+                  height: `${size}px`,
+                  left: `${3 + (i * 7) % 90}%`,
+                  bottom: `${-2 - (i * 2) % 8}%`,
+                  filter: `blur(${size > 20 ? 3 : 1}px)`,
+                  animation: `profile-particle ${5 + (i % 4) * 2}s ease-in-out infinite`,
+                  animationDelay: `${i * 0.6}s`,
+                }}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      <div className="w-full max-w-md space-y-6 relative z-10">
         {/* Avatar */}
         <div className="flex flex-col items-center gap-3">
           {profile.avatar_url ? (
@@ -194,12 +238,12 @@ export function ProfilePage({
               src={profile.avatar_url}
               alt={profile.display_name || profile.username}
               className="h-24 w-24 rounded-full object-cover border-2"
-              style={{ borderColor: accentColor }}
+              style={{ borderColor: accentColor, ...floatAvatarStyle }}
             />
           ) : (
             <div
               className="h-24 w-24 rounded-full flex items-center justify-center text-3xl font-bold"
-              style={{ backgroundColor: accentColor }}
+              style={{ backgroundColor: accentColor, ...floatAvatarStyle }}
             >
               {(profile.display_name || profile.username)?.[0]?.toUpperCase()}
             </div>
@@ -241,7 +285,7 @@ export function ProfilePage({
 
         {/* Links, Embeds & Headers */}
         <div className="space-y-3">
-          {remainingLinks.map((link) => renderLink(link))}
+          {remainingLinks.map((link, i) => renderLink(link, false, i))}
         </div>
 
         {/* Email Signup */}
