@@ -18,6 +18,7 @@ import {
   LayoutDashboard,
   Moon,
   Sun,
+  Users,
 } from "lucide-react";
 import { Profile } from "@/types/database";
 import { toast } from "sonner";
@@ -29,6 +30,7 @@ const navItems = [
   { href: "/dashboard/links", label: "Links", icon: LinkIcon },
   { href: "/dashboard/appearance", label: "Appearance", icon: Palette },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/dashboard/subscribers", label: "Subscribers", icon: Users },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 

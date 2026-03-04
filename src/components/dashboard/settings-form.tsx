@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import type { Profile } from "@/types/database";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { Switch } from "@/components/ui/switch";
 import { Upload } from "lucide-react";
 
 export function SettingsForm({
@@ -25,6 +26,9 @@ export function SettingsForm({
   const [bio, setBio] = useState(profile.bio || "");
   const [username, setUsername] = useState(profile.username);
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || "");
+  const [showStats, setShowStats] = useState(profile.show_stats);
+  const [showEmailSignup, setShowEmailSignup] = useState(profile.show_email_signup);
+  const [emailSignupText, setEmailSignupText] = useState(profile.email_signup_text || "");
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -57,6 +61,9 @@ export function SettingsForm({
         bio: bio.trim(),
         username: username.trim(),
         avatar_url: avatarUrl || null,
+        show_stats: showStats,
+        show_email_signup: showEmailSignup,
+        email_signup_text: emailSignupText.trim() || null,
       })
       .eq("id", profile.id);
 
@@ -198,6 +205,43 @@ export function SettingsForm({
             <p className="text-xs text-muted-foreground">{bio.length}/160</p>
           </div>
 
+          <Button onClick={handleSaveProfile} disabled={saving}>
+            {saving ? "Saving..." : "Save changes"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Display</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium">Show click stats on profile</Label>
+              <p className="text-xs text-muted-foreground">Display click counts next to links on your public page</p>
+            </div>
+            <Switch checked={showStats} onCheckedChange={setShowStats} />
+          </div>
+          <Separator />
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium">Email signup form</Label>
+              <p className="text-xs text-muted-foreground">Let visitors subscribe to your newsletter</p>
+            </div>
+            <Switch checked={showEmailSignup} onCheckedChange={setShowEmailSignup} />
+          </div>
+          {showEmailSignup && (
+            <div className="space-y-2">
+              <Label htmlFor="email-signup-text">Signup prompt text</Label>
+              <Input
+                id="email-signup-text"
+                placeholder="Subscribe to my newsletter!"
+                value={emailSignupText}
+                onChange={(e) => setEmailSignupText(e.target.value)}
+              />
+            </div>
+          )}
           <Button onClick={handleSaveProfile} disabled={saving}>
             {saving ? "Saving..." : "Save changes"}
           </Button>

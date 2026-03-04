@@ -4,9 +4,25 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2 } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical, Plus, Trash2 } from "lucide-react";
 import type { SocialLink } from "@/types/database";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -22,6 +38,60 @@ const PLATFORMS = [
   "discord",
 ];
 
+function SortableSocialLinkItem({
+  link,
+  onDelete,
+}: {
+  link: SocialLink;
+  onDelete: (id: string) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: link.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-3 rounded-lg border border-border p-3 ${
+        isDragging ? "opacity-50 shadow-lg" : ""
+      }`}
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="cursor-grab text-muted-foreground hover:text-foreground touch-none"
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <span className="text-sm font-medium capitalize w-20 shrink-0">
+        {link.platform}
+      </span>
+      <span className="text-sm text-muted-foreground truncate flex-1">
+        {link.url}
+      </span>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => onDelete(link.id)}
+        className="text-destructive hover:text-destructive shrink-0"
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
+
 export function SocialLinksManager({
   initialLinks,
   userId,
@@ -35,6 +105,13 @@ export function SocialLinksManager({
   const [adding, setAdding] = useState(false);
   const supabase = createClient();
   const router = useRouter();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   async function handleAdd() {
     if (!newUrl.trim()) return;
@@ -75,33 +152,59 @@ export function SocialLinksManager({
     router.refresh();
   }
 
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = links.findIndex((l) => l.id === active.id);
+    const newIndex = links.findIndex((l) => l.id === over.id);
+
+    const newLinks = arrayMove(links, oldIndex, newIndex);
+    setLinks(newLinks);
+
+    const updates = newLinks.map((link, index) => ({
+      id: link.id,
+      user_id: userId,
+      platform: link.platform,
+      url: link.url,
+      sort_order: index,
+    }));
+
+    const { error } = await supabase.from("social_links").upsert(updates);
+    if (error) {
+      toast.error("Failed to save order");
+      setLinks(links);
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Social Links</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {links.map((link) => (
-          <div
-            key={link.id}
-            className="flex items-center gap-3 rounded-lg border border-border p-3"
+        {links.length > 0 && (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
           >
-            <span className="text-sm font-medium capitalize w-20 shrink-0">
-              {link.platform}
-            </span>
-            <span className="text-sm text-muted-foreground truncate flex-1">
-              {link.url}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleDelete(link.id)}
-              className="text-destructive hover:text-destructive shrink-0"
+            <SortableContext
+              items={links.map((l) => l.id)}
+              strategy={verticalListSortingStrategy}
             >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        ))}
+              <div className="space-y-2">
+                {links.map((link) => (
+                  <SortableSocialLinkItem
+                    key={link.id}
+                    link={link}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        )}
 
         {links.length < 8 && (
           <div className="flex flex-col sm:flex-row gap-2">

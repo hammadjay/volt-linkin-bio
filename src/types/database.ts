@@ -8,6 +8,11 @@ export interface Profile {
   accent_color: string | null;
   background_override: string | null;
   button_style: "rounded" | "pill" | "sharp";
+  show_stats: boolean;
+  show_email_signup: boolean;
+  email_signup_text: string | null;
+  card_bg_override: string | null;
+  card_text_override: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -22,8 +27,10 @@ export interface Link {
   is_active: boolean;
   scheduled_start: string | null;
   scheduled_end: string | null;
-  type: "link" | "embed";
+  type: "link" | "embed" | "header";
   embed_platform: "youtube" | "spotify" | "twitter" | "tiktok" | "soundcloud" | null;
+  is_featured: boolean;
+  is_sensitive: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -69,4 +76,11 @@ export interface PageView {
   viewed_at: string;
   referrer: string | null;
   device_type: string | null;
+}
+
+export interface Subscriber {
+  id: string;
+  user_id: string;
+  email: string;
+  subscribed_at: string;
 }

@@ -70,12 +70,29 @@ export default async function UserProfilePage({ params }: Props) {
     .eq("user_id", profile.id)
     .order("sort_order", { ascending: true });
 
+  // Fetch click counts if show_stats is enabled
+  let clickCounts: Record<string, number> = {};
+  if (profile.show_stats && links && links.length > 0) {
+    const linkIds = links.map((l) => l.id);
+    const { data: clicks } = await supabase
+      .from("link_clicks")
+      .select("link_id")
+      .in("link_id", linkIds);
+
+    if (clicks) {
+      for (const click of clicks) {
+        clickCounts[click.link_id] = (clickCounts[click.link_id] || 0) + 1;
+      }
+    }
+  }
+
   return (
     <ProfilePage
       profile={profile}
       theme={profile.themes}
       links={links ?? []}
       socialLinks={socialLinks ?? []}
+      clickCounts={clickCounts}
     />
   );
 }

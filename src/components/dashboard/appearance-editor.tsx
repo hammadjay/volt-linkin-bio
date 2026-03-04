@@ -18,6 +18,8 @@ function ProfilePreview({
   accentColor,
   backgroundOverride,
   buttonStyle,
+  cardBgOverride,
+  cardTextOverride,
 }: {
   profile: Profile;
   theme: Theme | null;
@@ -25,11 +27,13 @@ function ProfilePreview({
   accentColor: string;
   backgroundOverride: string;
   buttonStyle: string;
+  cardBgOverride: string;
+  cardTextOverride: string;
 }) {
   const bg = backgroundOverride || theme?.background_value || "#0f0f23";
   const textColor = theme?.text_color || "#ffffff";
-  const cardBg = theme?.card_bg || "rgba(255,255,255,0.08)";
-  const cardTextColor = theme?.card_text_color || "#ffffff";
+  const cardBg = cardBgOverride || theme?.card_bg || "rgba(255,255,255,0.08)";
+  const cardTextColor = cardTextOverride || theme?.card_text_color || "#ffffff";
   const isGradient = bg.includes("gradient");
 
   const borderRadiusMap: Record<string, string> = {
@@ -113,6 +117,8 @@ export function AppearanceEditor({
     profile.background_override || ""
   );
   const [buttonStyle, setButtonStyle] = useState(profile.button_style || "rounded");
+  const [cardBgOverride, setCardBgOverride] = useState(profile.card_bg_override || "");
+  const [cardTextOverride, setCardTextOverride] = useState(profile.card_text_override || "");
   const [saving, setSaving] = useState(false);
   const supabase = createClient();
   const router = useRouter();
@@ -129,6 +135,8 @@ export function AppearanceEditor({
         accent_color: accentColor || null,
         background_override: backgroundOverride || null,
         button_style: buttonStyle,
+        card_bg_override: cardBgOverride || null,
+        card_text_override: cardTextOverride || null,
       })
       .eq("id", profile.id);
 
@@ -252,6 +260,52 @@ export function AppearanceEditor({
             </div>
 
             <div className="space-y-2">
+              <Label>Card Background</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={cardBgOverride || selectedTheme?.card_bg || "#1a1a2e"}
+                  onChange={(e) => setCardBgOverride(e.target.value)}
+                  className="h-9 w-12 cursor-pointer rounded border border-input bg-transparent"
+                />
+                <Input
+                  value={cardBgOverride}
+                  onChange={(e) => setCardBgOverride(e.target.value)}
+                  placeholder="Theme default"
+                  className="flex-1"
+                />
+                {cardBgOverride && (
+                  <Button variant="ghost" size="sm" onClick={() => setCardBgOverride("")}>
+                    Reset
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Card Text Color</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={cardTextOverride || selectedTheme?.card_text_color || "#ffffff"}
+                  onChange={(e) => setCardTextOverride(e.target.value)}
+                  className="h-9 w-12 cursor-pointer rounded border border-input bg-transparent"
+                />
+                <Input
+                  value={cardTextOverride}
+                  onChange={(e) => setCardTextOverride(e.target.value)}
+                  placeholder="Theme default"
+                  className="flex-1"
+                />
+                {cardTextOverride && (
+                  <Button variant="ghost" size="sm" onClick={() => setCardTextOverride("")}>
+                    Reset
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
               <Label>Button Style</Label>
               <div className="grid grid-cols-3 gap-2">
                 {(["rounded", "pill", "sharp"] as const).map((style) => (
@@ -296,6 +350,8 @@ export function AppearanceEditor({
           accentColor={accentColor}
           backgroundOverride={backgroundOverride}
           buttonStyle={buttonStyle}
+          cardBgOverride={cardBgOverride}
+          cardTextOverride={cardTextOverride}
         />
       </div>
     </div>
