@@ -91,7 +91,19 @@ export function SettingsForm({
       data: { publicUrl },
     } = supabase.storage.from("avatars").getPublicUrl(filePath);
 
-    setAvatarUrl(publicUrl);
+    // Save avatar URL to profile immediately
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ avatar_url: publicUrl })
+      .eq("id", profile.id);
+
+    if (updateError) {
+      toast.error("Failed to save avatar");
+    } else {
+      setAvatarUrl(publicUrl);
+      toast.success("Avatar updated");
+      router.refresh();
+    }
     setUploadingAvatar(false);
   }
 
