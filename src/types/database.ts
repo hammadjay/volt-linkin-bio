@@ -17,6 +17,12 @@ export interface Profile {
   seo_description: string | null;
   seo_image: string | null;
   animation_type: "none" | "gradient" | "particles" | "float";
+  show_guestbook: boolean;
+  referral_code: string | null;
+  referred_by: string | null;
+  video_background_url: string | null;
+  music_url: string | null;
+  cursor_effect: "default" | "sparkle" | "emoji_trail" | "glow" | "ring";
   created_at: string;
   updated_at: string;
 }
@@ -87,4 +93,53 @@ export interface Subscriber {
   user_id: string;
   email: string;
   subscribed_at: string;
+}
+
+export interface ProfileReaction {
+  id: string;
+  user_id: string;
+  emoji: string;
+  count: number;
+}
+
+export interface GuestbookEntry {
+  id: string;
+  user_id: string;
+  author_name: string;
+  message: string;
+  created_at: string;
+}
+
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: string;
+}
+
+export interface UserBadge {
+  id: string;
+  user_id: string;
+  badge_id: string;
+  unlocked_at: string;
+}
+
+export interface ReferralReward {
+  id: string;
+  user_id: string;
+  reward_type: string;
+  reward_value: string;
+  unlocked_at: string;
+}
+
+export interface ProfileSticker {
+  id: string;
+  user_id: string;
+  sticker_key: string;
+  x_percent: number;
+  y_percent: number;
+  scale: number;
+  rotation: number;
+  sort_order: number;
 }

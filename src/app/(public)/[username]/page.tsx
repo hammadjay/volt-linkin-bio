@@ -91,6 +91,41 @@ export default async function UserProfilePage({ params }: Props) {
     }
   }
 
+  // Fetch reactions
+  const { data: reactions } = await supabase
+    .from("profile_reactions")
+    .select("*")
+    .eq("user_id", profile.id);
+
+  // Fetch guestbook entries if enabled
+  let guestbookEntries = null;
+  if (profile.show_guestbook) {
+    const { data } = await supabase
+      .from("guestbook_entries")
+      .select("*")
+      .eq("user_id", profile.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    guestbookEntries = data;
+  }
+
+  // Fetch badges
+  const { data: allBadges } = await supabase
+    .from("badges")
+    .select("*");
+
+  const { data: userBadges } = await supabase
+    .from("user_badges")
+    .select("*")
+    .eq("user_id", profile.id);
+
+  // Fetch stickers
+  const { data: stickers } = await supabase
+    .from("profile_stickers")
+    .select("*")
+    .eq("user_id", profile.id)
+    .order("sort_order", { ascending: true });
+
   return (
     <ProfilePage
       profile={profile}
@@ -98,6 +133,11 @@ export default async function UserProfilePage({ params }: Props) {
       links={links ?? []}
       socialLinks={socialLinks ?? []}
       clickCounts={clickCounts}
+      reactions={reactions ?? []}
+      guestbookEntries={guestbookEntries ?? []}
+      badges={allBadges ?? []}
+      userBadges={userBadges ?? []}
+      stickers={stickers ?? []}
     />
   );
 }

@@ -13,7 +13,7 @@ import type { Profile } from "@/types/database";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Switch } from "@/components/ui/switch";
-import { Upload, Globe, Search } from "lucide-react";
+import { Upload, Globe, Search, Music } from "lucide-react";
 
 export function SettingsForm({
   profile,
@@ -29,6 +29,9 @@ export function SettingsForm({
   const [showStats, setShowStats] = useState(profile.show_stats);
   const [showEmailSignup, setShowEmailSignup] = useState(profile.show_email_signup);
   const [emailSignupText, setEmailSignupText] = useState(profile.email_signup_text || "");
+  const [showGuestbook, setShowGuestbook] = useState(profile.show_guestbook);
+  const [musicUrl, setMusicUrl] = useState(profile.music_url || "");
+  const [uploadingMusic, setUploadingMusic] = useState(false);
   const [seoTitle, setSeoTitle] = useState(profile.seo_title || "");
   const [seoDescription, setSeoDescription] = useState(profile.seo_description || "");
   const [seoImage, setSeoImage] = useState(profile.seo_image || "");
@@ -67,6 +70,8 @@ export function SettingsForm({
         show_stats: showStats,
         show_email_signup: showEmailSignup,
         email_signup_text: emailSignupText.trim() || null,
+        show_guestbook: showGuestbook,
+        music_url: musicUrl.trim() || null,
         seo_title: seoTitle.trim() || null,
         seo_description: seoDescription.trim() || null,
         seo_image: seoImage.trim() || null,
@@ -248,6 +253,80 @@ export function SettingsForm({
               />
             </div>
           )}
+          <Separator />
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium">Guestbook</Label>
+              <p className="text-xs text-muted-foreground">Let visitors leave messages on your page</p>
+            </div>
+            <Switch checked={showGuestbook} onCheckedChange={setShowGuestbook} />
+          </div>
+          <Button onClick={handleSaveProfile} disabled={saving}>
+            {saving ? "Saving..." : "Save changes"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Music className="h-5 w-5" />
+            Profile Music
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="music-url">Music URL</Label>
+            <Input
+              id="music-url"
+              value={musicUrl}
+              onChange={(e) => setMusicUrl(e.target.value)}
+              placeholder="https://example.com/song.mp3"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="music-upload" className="cursor-pointer">
+              <div className="flex items-center gap-2 rounded-md border border-input px-3 py-2 text-sm hover:bg-accent transition-colors">
+                <Upload className="h-4 w-4" />
+                {uploadingMusic ? "Uploading..." : "Upload audio"}
+              </div>
+            </Label>
+            <input
+              id="music-upload"
+              type="file"
+              accept="audio/mp3,audio/wav,audio/mpeg"
+              className="hidden"
+              disabled={uploadingMusic}
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (file.size > 5 * 1024 * 1024) {
+                  toast.error("File must be under 5MB");
+                  return;
+                }
+                setUploadingMusic(true);
+                const fileExt = file.name.split(".").pop();
+                const filePath = `${profile.id}/music.${fileExt}`;
+                const { error: uploadError } = await supabase.storage
+                  .from("audio")
+                  .upload(filePath, file, { upsert: true });
+                if (uploadError) {
+                  toast.error("Failed to upload audio");
+                  setUploadingMusic(false);
+                  return;
+                }
+                const { data: { publicUrl } } = supabase.storage.from("audio").getPublicUrl(filePath);
+                setMusicUrl(publicUrl);
+                toast.success("Audio uploaded");
+                setUploadingMusic(false);
+              }}
+            />
+            {musicUrl && (
+              <Button variant="ghost" size="sm" onClick={() => setMusicUrl("")}>
+                Clear
+              </Button>
+            )}
+          </div>
           <Button onClick={handleSaveProfile} disabled={saving}>
             {saving ? "Saving..." : "Save changes"}
           </Button>

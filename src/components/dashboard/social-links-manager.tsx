@@ -138,6 +138,8 @@ export function SocialLinksManager({
     setNewUrl("");
     setAdding(false);
     toast.success("Social link added");
+    // Trigger badge check
+    fetch("/api/badges/check", { method: "POST" }).catch(() => {});
     router.refresh();
   }
 

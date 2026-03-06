@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QrCodeCard } from "@/components/dashboard/qr-code-card";
-import { LinkIcon, BarChart3, Eye, MousePointerClick } from "lucide-react";
+import { LinkIcon, BarChart3, Eye, MousePointerClick, Heart } from "lucide-react";
 import Link from "next/link";
 
 export default async function DashboardPage() {
@@ -31,6 +31,16 @@ export default async function DashboardPage() {
     .select("*", { count: "exact", head: true })
     .eq("user_id", user!.id);
 
+  // Sum all reaction counts
+  const { data: reactionData } = await supabase
+    .from("profile_reactions")
+    .select("count")
+    .eq("user_id", user!.id);
+
+  const totalReactions = reactionData
+    ? reactionData.reduce((sum, r) => sum + (r.count || 0), 0)
+    : 0;
+
   let accentColor = profile?.accent_color || "#8b5cf6";
   if (profile?.theme_id) {
     const { data: theme } = await supabase
@@ -47,6 +57,7 @@ export default async function DashboardPage() {
     { label: "Total Links", value: linkCount ?? 0, icon: LinkIcon },
     { label: "Total Clicks", value: clickCount ?? 0, icon: MousePointerClick },
     { label: "Page Views", value: viewCount ?? 0, icon: Eye },
+    { label: "Reactions", value: totalReactions, icon: Heart },
   ];
 
   return (
@@ -58,7 +69,7 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
           <Card key={stat.label}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">

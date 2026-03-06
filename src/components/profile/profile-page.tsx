@@ -1,9 +1,17 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import type { Profile, Theme, Link, SocialLink } from "@/types/database";
+import type { Profile, Theme, Link, SocialLink, ProfileReaction, GuestbookEntry, Badge, UserBadge, ProfileSticker } from "@/types/database";
 import { SocialIcon } from "@/components/profile/social-icon";
 import { EmbedBlock } from "@/components/profile/embed-block";
+import { ReactionBar } from "@/components/profile/reaction-bar";
+import { Guestbook } from "@/components/profile/guestbook";
+import { BadgeRow } from "@/components/profile/badge-row";
+import { VideoBackground } from "@/components/profile/video-background";
+import { MusicPlayer } from "@/components/profile/music-player";
+import { CursorEffects } from "@/components/profile/cursor-effects";
+import { StickerLayer } from "@/components/profile/sticker-layer";
+import { LiveVisitors } from "@/components/profile/live-visitors";
 import { ShieldAlert } from "lucide-react";
 
 function detectDeviceType(): "mobile" | "desktop" | "tablet" {
@@ -21,12 +29,22 @@ export function ProfilePage({
   links,
   socialLinks,
   clickCounts,
+  reactions,
+  guestbookEntries,
+  badges,
+  userBadges,
+  stickers,
 }: {
   profile: Profile;
   theme: Theme | null;
   links: Link[];
   socialLinks: SocialLink[];
   clickCounts: Record<string, number>;
+  reactions: ProfileReaction[];
+  guestbookEntries: GuestbookEntry[];
+  badges: Badge[];
+  userBadges: UserBadge[];
+  stickers: ProfileSticker[];
 }) {
   const [acknowledgedSensitive, setAcknowledgedSensitive] = useState<Set<string>>(new Set());
   const [sensitiveModal, setSensitiveModal] = useState<{ linkId: string; url: string } | null>(null);
@@ -204,6 +222,19 @@ export function ProfilePage({
           : undefined,
       }}
     >
+      {/* Video Background */}
+      {profile.video_background_url && (
+        <VideoBackground url={profile.video_background_url} />
+      )}
+
+      {/* Cursor Effects */}
+      {profile.cursor_effect && profile.cursor_effect !== "default" && (
+        <CursorEffects effect={profile.cursor_effect} accentColor={accentColor} />
+      )}
+
+      {/* Sticker Layer */}
+      {stickers.length > 0 && <StickerLayer stickers={stickers} />}
+
       {/* Particles layer */}
       {animationType === "particles" && (
         <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
@@ -252,11 +283,33 @@ export function ProfilePage({
             <h1 className="text-xl font-bold">
               {profile.display_name || profile.username}
             </h1>
+
+            {/* Live Visitors */}
+            <LiveVisitors userId={profile.id} textColor={textColor} />
+
             {profile.bio && (
               <p className="text-sm mt-1 opacity-80">{profile.bio}</p>
             )}
           </div>
         </div>
+
+        {/* Badge Row */}
+        <BadgeRow
+          badges={badges}
+          userBadges={userBadges}
+          accentColor={accentColor}
+          textColor={textColor}
+        />
+
+        {/* Music Player */}
+        {profile.music_url && (
+          <MusicPlayer
+            url={profile.music_url}
+            accentColor={accentColor}
+            textColor={textColor}
+            cardBg={cardBg}
+          />
+        )}
 
         {/* Social Icons */}
         {socialLinks.length > 0 && (
@@ -275,6 +328,13 @@ export function ProfilePage({
             ))}
           </div>
         )}
+
+        {/* Reaction Bar */}
+        <ReactionBar
+          profileId={profile.id}
+          initialReactions={reactions}
+          textColor={textColor}
+        />
 
         {/* Featured Link */}
         {featuredLink && (
@@ -329,14 +389,35 @@ export function ProfilePage({
           </div>
         )}
 
-        {/* Footer */}
+        {/* Guestbook */}
+        {profile.show_guestbook && (
+          <Guestbook
+            profileId={profile.id}
+            initialEntries={guestbookEntries}
+            textColor={textColor}
+            cardBg={cardBg}
+            cardTextColor={cardTextColor}
+            accentColor={accentColor}
+            btnRadius={btnRadius}
+          />
+        )}
+
+        {/* Made with Volt Footer */}
         <div className="text-center pt-8">
           <a
-            href="/"
-            className="text-xs opacity-50 hover:opacity-80 transition-opacity"
-            style={{ color: textColor }}
+            href="/signup"
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-opacity"
+            style={{
+              color: textColor,
+              opacity: 0.4,
+              backgroundColor: `${textColor}08`,
+              border: `1px solid ${textColor}10`,
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.7")}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.4")}
           >
-            Powered by Volt
+            <span>⚡</span>
+            Made with Volt
           </a>
         </div>
       </div>

@@ -19,6 +19,11 @@ import {
   Moon,
   Sun,
   Users,
+  MessageSquare,
+  Award,
+  Gift,
+  Sticker,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Profile } from "@/types/database";
 import { toast } from "sonner";
@@ -31,6 +36,11 @@ const navItems = [
   { href: "/dashboard/appearance", label: "Appearance", icon: Palette },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/dashboard/subscribers", label: "Subscribers", icon: Users },
+  { href: "/dashboard/guestbook", label: "Guestbook", icon: MessageSquare },
+  { href: "/dashboard/badges", label: "Badges", icon: Award },
+  { href: "/dashboard/referrals", label: "Referrals", icon: Gift },
+  { href: "/dashboard/stickers", label: "Stickers", icon: Sticker },
+  { href: "/dashboard/share-card", label: "Share Card", icon: ImageIcon },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 

@@ -295,6 +295,23 @@
   animation: profile-avatar-float 4s ease-in-out infinite;
 }
 
+/* ── Reaction & cursor animations ── */
+
+@keyframes emoji-float {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-80px) scale(1.4); }
+}
+
+@keyframes cursor-sparkle {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+}
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.5); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-profile-link-float,
   .animate-profile-avatar-float,

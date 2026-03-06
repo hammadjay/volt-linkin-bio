@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Profile, Theme, Link } from "@/types/database";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Check } from "lucide-react";
+import { Check, Upload, X } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -162,6 +162,9 @@ export function AppearanceEditor({
   const [cardBgOverride, setCardBgOverride] = useState(profile.card_bg_override || "");
   const [cardTextOverride, setCardTextOverride] = useState(profile.card_text_override || "");
   const [animationType, setAnimationType] = useState<string>(profile.animation_type || "none");
+  const [videoBackgroundUrl, setVideoBackgroundUrl] = useState(profile.video_background_url || "");
+  const [cursorEffect, setCursorEffect] = useState<string>(profile.cursor_effect || "default");
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [saving, setSaving] = useState(false);
   const supabase = createClient();
   const router = useRouter();
@@ -181,6 +184,8 @@ export function AppearanceEditor({
         card_bg_override: cardBgOverride || null,
         card_text_override: cardTextOverride || null,
         animation_type: animationType,
+        video_background_url: videoBackgroundUrl || null,
+        cursor_effect: cursorEffect,
       })
       .eq("id", profile.id);
 
@@ -188,6 +193,8 @@ export function AppearanceEditor({
       toast.error("Failed to save appearance");
     } else {
       toast.success("Appearance updated");
+      // Trigger badge check
+      fetch("/api/badges/check", { method: "POST" }).catch(() => {});
       router.refresh();
     }
     setSaving(false);
@@ -391,6 +398,96 @@ export function AppearanceEditor({
               </div>
             </div>
 
+            <div className="space-y-2">
+              <Label>Cursor Effect</Label>
+              <Select value={cursorEffect} onValueChange={setCursorEffect}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">Default</SelectItem>
+                  <SelectItem value="sparkle">Sparkle Trail</SelectItem>
+                  <SelectItem value="emoji_trail">Emoji Trail</SelectItem>
+                  <SelectItem value="glow">Glow</SelectItem>
+                  <SelectItem value="ring">Ring</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button onClick={handleSave} disabled={saving} className="w-full">
+              {saving ? "Saving..." : "Save Appearance"}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Video Background</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="video-url">Video URL</Label>
+              <Input
+                id="video-url"
+                value={videoBackgroundUrl}
+                onChange={(e) => setVideoBackgroundUrl(e.target.value)}
+                placeholder="https://example.com/video.mp4"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="video-upload" className="cursor-pointer">
+                <div className="flex items-center gap-2 rounded-md border border-input px-3 py-2 text-sm hover:bg-accent transition-colors">
+                  <Upload className="h-4 w-4" />
+                  {uploadingVideo ? "Uploading..." : "Upload video"}
+                </div>
+              </Label>
+              <input
+                id="video-upload"
+                type="file"
+                accept="video/mp4,video/webm"
+                className="hidden"
+                disabled={uploadingVideo}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  if (file.size > 10 * 1024 * 1024) {
+                    toast.error("File must be under 10MB");
+                    return;
+                  }
+                  setUploadingVideo(true);
+                  const fileExt = file.name.split(".").pop();
+                  const filePath = `${profile.id}/bg.${fileExt}`;
+                  const { error: uploadError } = await supabase.storage
+                    .from("videos")
+                    .upload(filePath, file, { upsert: true });
+                  if (uploadError) {
+                    toast.error("Failed to upload video");
+                    setUploadingVideo(false);
+                    return;
+                  }
+                  const { data: { publicUrl } } = supabase.storage.from("videos").getPublicUrl(filePath);
+                  setVideoBackgroundUrl(publicUrl);
+                  toast.success("Video uploaded");
+                  setUploadingVideo(false);
+                }}
+              />
+              {videoBackgroundUrl && (
+                <Button variant="ghost" size="sm" onClick={() => setVideoBackgroundUrl("")}>
+                  <X className="h-4 w-4 mr-1" />
+                  Clear
+                </Button>
+              )}
+            </div>
+            {videoBackgroundUrl && (
+              <video
+                src={videoBackgroundUrl}
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="w-full rounded-lg max-h-32 object-cover"
+              />
+            )}
             <Button onClick={handleSave} disabled={saving} className="w-full">
               {saving ? "Saving..." : "Save Appearance"}
             </Button>

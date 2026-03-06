@@ -371,6 +371,8 @@ export function LinkManager({
 
       setLinks((prev) => [...prev, data]);
       toast.success(linkType === "header" ? "Header added" : "Link added");
+      // Trigger badge check
+      fetch("/api/badges/check", { method: "POST" }).catch(() => {});
     }
 
     setDialogOpen(false);
