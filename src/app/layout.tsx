@@ -22,6 +22,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script defer src="https://cloud.umami.is/script.js" data-website-id="998fd203-bc09-43f9-aa45-6b44e64260d2" />
+      </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         <ThemeProvider>
           {children}
