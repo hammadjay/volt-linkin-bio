@@ -23,6 +23,20 @@ export interface Profile {
   video_background_url: string | null;
   music_url: string | null;
   cursor_effect: "default" | "sparkle" | "emoji_trail" | "glow" | "ring";
+  // Background system
+  bg_image_url: string | null;
+  bg_overlay_color: string | null;
+  bg_overlay_opacity: number;
+  // Content card
+  card_style: "none" | "glass" | "solid" | "outlined" | "image";
+  card_bg_opacity: number;
+  card_bg_image_url: string | null;
+  card_blur: number;
+  card_border_radius: number;
+  card_border_color: string | null;
+  card_shadow: boolean;
+  card_max_width: "sm" | "md" | "lg" | "full";
+  card_padding: "sm" | "md" | "lg";
   created_at: string;
   updated_at: string;
 }

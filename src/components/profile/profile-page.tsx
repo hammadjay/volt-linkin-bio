@@ -14,6 +14,17 @@ import { StickerLayer } from "@/components/profile/sticker-layer";
 import { LiveVisitors } from "@/components/profile/live-visitors";
 import { ShieldAlert } from "lucide-react";
 
+function hexToRgba(hex: string, alpha: number): string {
+  const clean = hex.replace("#", "");
+  const full = clean.length === 3
+    ? clean.split("").map((c) => c + c).join("")
+    : clean;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 function detectDeviceType(): "mobile" | "desktop" | "tablet" {
   if (typeof window === "undefined") return "desktop";
   const ua = navigator.userAgent.toLowerCase();
@@ -135,6 +146,22 @@ export function ProfilePage({
     setSubscribing(false);
   }
 
+  // Background type resolution
+  const bgType = profile.bg_image_url
+    ? "image"
+    : profile.video_background_url
+    ? "video"
+    : isGradient
+    ? "gradient"
+    : "solid";
+
+  // Content card helpers
+  const cardMaxWidths: Record<string, string> = { sm: "360px", md: "448px", lg: "560px", full: "100%" };
+  const cardPaddingValues: Record<string, string> = { sm: "1rem", md: "1.5rem", lg: "2.5rem" };
+  const profileCardStyle = profile.card_style || "none";
+  const profileCardBgOpacity = (profile.card_bg_opacity ?? 100) / 100;
+  const profileCardBorderRadius = profile.card_border_radius ?? 24;
+
   const animationType = profile.animation_type || "none";
   const floatLinkStyle = animationType === "float"
     ? { animation: "profile-link-float 3s ease-in-out infinite" }
@@ -202,13 +229,19 @@ export function ProfilePage({
     );
   }
 
-  const showGradientAnim = animationType === "gradient" && isGradient;
+  const showGradientAnim = animationType === "gradient" && bgType === "gradient";
 
   return (
     <div
       className="min-h-screen flex flex-col items-center px-4 py-12 overflow-hidden relative"
       style={{
-        ...(isGradient
+        ...(bgType === "image"
+          ? {
+              backgroundImage: `url(${profile.bg_image_url})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }
+          : bgType === "gradient"
           ? {
               backgroundImage: bg,
               ...(showGradientAnim
@@ -261,7 +294,70 @@ export function ProfilePage({
         </div>
       )}
 
-      <div className="w-full max-w-md space-y-6 relative z-10">
+      {/* Background Overlay */}
+      {(profile.bg_overlay_opacity ?? 0) > 0 && (
+        <div
+          className="absolute inset-0 z-[1] pointer-events-none"
+          style={{
+            backgroundColor: profile.bg_overlay_color || "#000000",
+            opacity: (profile.bg_overlay_opacity ?? 0) / 100,
+          }}
+        />
+      )}
+
+      {/* Content Card */}
+      <div
+        className={`w-full space-y-6 relative z-[2]${profileCardStyle === "image" ? " overflow-hidden" : ""}`}
+        style={{
+          maxWidth: cardMaxWidths[profile.card_max_width || "md"],
+          ...(profileCardStyle !== "none" ? {
+            padding: cardPaddingValues[profile.card_padding || "md"],
+            borderRadius: `${profileCardBorderRadius}px`,
+          } : {}),
+          ...(profileCardStyle === "glass" ? {
+            backgroundColor: "rgba(255,255,255,0.08)",
+            backdropFilter: `blur(${profile.card_blur ?? 20}px)`,
+            border: `1px solid ${profile.card_border_color || "rgba(255,255,255,0.15)"}`,
+          } : profileCardStyle === "solid" ? {
+            backgroundColor: cardBg.startsWith("#")
+              ? hexToRgba(cardBg, profileCardBgOpacity)
+              : cardBg,
+            border: `1px solid ${profile.card_border_color || "transparent"}`,
+          } : profileCardStyle === "outlined" ? {
+            backgroundColor: "transparent",
+            border: `1px solid ${profile.card_border_color || "rgba(255,255,255,0.3)"}`,
+          } : profileCardStyle === "image" ? {
+            border: `1px solid ${profile.card_border_color || "transparent"}`,
+          } : {}),
+          ...(profileCardStyle !== "none" && profile.card_shadow ? {
+            boxShadow: "0 25px 50px rgba(0,0,0,0.4)",
+          } : {}),
+        }}
+      >
+        {/* Card image background layers */}
+        {profileCardStyle === "image" && profile.card_bg_image_url && (
+          <>
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage: `url(${profile.card_bg_image_url})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                borderRadius: `${profileCardBorderRadius}px`,
+                zIndex: -1,
+              }}
+            />
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundColor: cardBg,
+                opacity: profileCardBgOpacity,
+                borderRadius: `${profileCardBorderRadius}px`,
+                zIndex: -1,
+              }}
+            />
+          </>
+        )}
         {/* Avatar */}
         <div className="flex flex-col items-center gap-3">
           {profile.avatar_url ? (

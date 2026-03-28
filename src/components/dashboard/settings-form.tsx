@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +36,14 @@ export function SettingsForm({
   const [seoDescription, setSeoDescription] = useState(profile.seo_description || "");
   const [seoImage, setSeoImage] = useState(profile.seo_image || "");
   const [saving, setSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const isFirstRender = useRef(true);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    setIsDirty(true);
+  }, [displayName, bio, username, avatarUrl, showStats, showEmailSignup, emailSignupText, showGuestbook, musicUrl, seoTitle, seoDescription, seoImage]);
   const [newPassword, setNewPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
   const supabase = createClient();
@@ -82,6 +89,7 @@ export function SettingsForm({
       toast.error("Failed to update profile");
     } else {
       toast.success("Profile updated");
+      setIsDirty(false);
       router.refresh();
     }
     setSaving(false);
@@ -216,9 +224,6 @@ export function SettingsForm({
             <p className="text-xs text-muted-foreground">{bio.length}/160</p>
           </div>
 
-          <Button onClick={handleSaveProfile} disabled={saving}>
-            {saving ? "Saving..." : "Save changes"}
-          </Button>
         </CardContent>
       </Card>
 
@@ -261,9 +266,6 @@ export function SettingsForm({
             </div>
             <Switch checked={showGuestbook} onCheckedChange={setShowGuestbook} />
           </div>
-          <Button onClick={handleSaveProfile} disabled={saving}>
-            {saving ? "Saving..." : "Save changes"}
-          </Button>
         </CardContent>
       </Card>
 
@@ -327,9 +329,6 @@ export function SettingsForm({
               </Button>
             )}
           </div>
-          <Button onClick={handleSaveProfile} disabled={saving}>
-            {saving ? "Saving..." : "Save changes"}
-          </Button>
         </CardContent>
       </Card>
 
@@ -428,9 +427,6 @@ export function SettingsForm({
             </div>
           </div>
 
-          <Button onClick={handleSaveProfile} disabled={saving}>
-            {saving ? "Saving..." : "Save changes"}
-          </Button>
         </CardContent>
       </Card>
 
@@ -488,6 +484,18 @@ export function SettingsForm({
           </Button>
         </CardContent>
       </Card>
+
+      {/* Floating Save Bar */}
+      {isDirty && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className="flex items-center gap-3 rounded-full bg-background/90 backdrop-blur-md border border-border shadow-xl px-5 py-2.5 pointer-events-auto">
+            <span className="text-sm text-muted-foreground hidden sm:block">Unsaved changes</span>
+            <Button size="sm" onClick={handleSaveProfile} disabled={saving} className="rounded-full px-5">
+              {saving ? "Saving..." : "Save changes"}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
