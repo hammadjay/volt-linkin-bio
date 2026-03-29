@@ -24,6 +24,7 @@ import {
   Gift,
   Sticker,
   Image as ImageIcon,
+  Wand2,
 } from "lucide-react";
 import { Profile } from "@/types/database";
 import { toast } from "sonner";
@@ -34,6 +35,7 @@ const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/links", label: "Links", icon: LinkIcon },
   { href: "/dashboard/appearance", label: "Appearance", icon: Palette },
+  { href: "/dashboard/studio", label: "Studio ✦", icon: Wand2 },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/dashboard/subscribers", label: "Subscribers", icon: Users },
   { href: "/dashboard/guestbook", label: "Guestbook", icon: MessageSquare },

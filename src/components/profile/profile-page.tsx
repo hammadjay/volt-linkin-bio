@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import type { Profile, Theme, Link, SocialLink, ProfileReaction, GuestbookEntry, Badge, UserBadge, ProfileSticker } from "@/types/database";
+import { getHoverEffectProps } from "@/lib/button-hover-effects";
 import { SocialIcon } from "@/components/profile/social-icon";
 import { EmbedBlock } from "@/components/profile/embed-block";
 import { ReactionBar } from "@/components/profile/reaction-bar";
@@ -13,6 +15,84 @@ import { CursorEffects } from "@/components/profile/cursor-effects";
 import { StickerLayer } from "@/components/profile/sticker-layer";
 import { LiveVisitors } from "@/components/profile/live-visitors";
 import { ShieldAlert } from "lucide-react";
+
+function loadFont(name: string | null | undefined) {
+  if (!name || name === "Inter" || typeof document === "undefined") return;
+  const id = `gf-${name.replace(/\s+/g, "-")}`;
+  if (document.getElementById(id)) return;
+  const link = document.createElement("link");
+  link.id = id;
+  link.rel = "stylesheet";
+  link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(name)}:wght@400;500;600;700&display=swap`;
+  document.head.appendChild(link);
+}
+
+function getAvatarShapeStyle(shape: string | undefined): React.CSSProperties {
+  switch (shape) {
+    case "hexagon":
+      return { clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" };
+    case "diamond":
+      return { clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)" };
+    case "rounded-square":
+      return { borderRadius: "20%" };
+    case "squircle":
+      return { borderRadius: "30%" };
+    default:
+      return { borderRadius: "50%" };
+  }
+}
+
+function AvatarDisplay({
+  profile,
+  accentColor,
+  floatStyle,
+}: {
+  profile: Profile;
+  accentColor: string;
+  floatStyle: React.CSSProperties;
+}) {
+  const ringStyle = profile.avatar_ring_style || "none";
+  const ringColor = profile.avatar_ring_color || accentColor;
+  const effect = profile.avatar_effect || "none";
+  const shape = profile.avatar_shape || "circle";
+
+  const shapeStyle = getAvatarShapeStyle(shape);
+  const glowStyle = effect === "glow"
+    ? { boxShadow: `0 0 20px ${accentColor}60, 0 0 40px ${accentColor}30` }
+    : {};
+  const pulseAnim = effect === "pulse" ? { animation: "avatar-pulse 2s ease-in-out infinite" } : {};
+
+  const ringEl = (() => {
+    if (ringStyle === "none") return null;
+    const base: React.CSSProperties = { position: "absolute", inset: -4, borderRadius: "50%" };
+    if (ringStyle === "solid") return <div style={{ ...base, border: `2px solid ${ringColor}` }} />;
+    if (ringStyle === "dashed") return <div style={{ ...base, border: `2px dashed ${ringColor}`, opacity: 0.8 }} />;
+    if (ringStyle === "glow") return <div style={{ ...base, border: `1.5px solid ${ringColor}`, boxShadow: `0 0 12px ${ringColor}80, 0 0 24px ${ringColor}40` }} />;
+    if (ringStyle === "gradient") return <div style={{ ...base, padding: 2, background: `linear-gradient(135deg, ${ringColor}, #EC4899)`, borderRadius: "50%" }} />;
+    return null;
+  })();
+
+  return (
+    <div className="relative" style={floatStyle}>
+      {profile.avatar_url ? (
+        <img
+          src={profile.avatar_url}
+          alt={profile.display_name || profile.username}
+          className="h-24 w-24 object-cover"
+          style={{ ...shapeStyle, ...glowStyle, ...pulseAnim }}
+        />
+      ) : (
+        <div
+          className="h-24 w-24 flex items-center justify-center text-3xl font-bold"
+          style={{ backgroundColor: accentColor, ...shapeStyle, ...glowStyle, ...pulseAnim }}
+        >
+          {(profile.display_name || profile.username)?.[0]?.toUpperCase()}
+        </div>
+      )}
+      {ringEl}
+    </div>
+  );
+}
 
 function hexToRgba(hex: string, alpha: number): string {
   const clean = hex.replace("#", "");
@@ -71,16 +151,37 @@ export function ProfilePage({
   const accentColor = profile.accent_color || theme?.accent_color || "#8b5cf6";
   const isGradient = bg.includes("gradient");
 
-  const borderRadiusMap: Record<string, string> = {
+  // Button radius — new button_shape takes precedence over legacy button_style
+  const buttonShapeRadius: Record<string, string> = {
+    rounded: "12px",
+    pill: "9999px",
+    sharp: "0",
+    squircle: "30%",
+    tag: "4px",
+    chip: "6px",
+    "shadow-lift": "10px",
+    underline: "0",
+  };
+  const legacyRadiusMap: Record<string, string> = {
     rounded: "0.75rem",
     pill: "9999px",
     sharp: "0",
   };
-  const btnRadius = borderRadiusMap[profile.button_style] || "0.75rem";
+  const btnRadius =
+    buttonShapeRadius[profile.button_shape] ||
+    legacyRadiusMap[profile.button_style] ||
+    "0.75rem";
 
   // Separate featured link and remaining links
   const featuredLink = links.find((l) => l.is_featured && l.type === "link");
   const remainingLinks = links.filter((l) => l !== featuredLink);
+
+  // Load custom Google Fonts
+  useEffect(() => {
+    loadFont(profile.font_heading);
+    loadFont(profile.font_body);
+    loadFont(profile.font_buttons);
+  }, [profile.font_heading, profile.font_body, profile.font_buttons]);
 
   useEffect(() => {
     fetch("/api/track", {
@@ -192,19 +293,38 @@ export function ProfilePage({
 
     const clicks = clickCounts[link.id];
 
+    const btnFontFamily = profile.font_buttons && profile.font_buttons !== "Inter"
+      ? `"${profile.font_buttons}", sans-serif`
+      : undefined;
+
+    const extraBtnStyle: React.CSSProperties = (() => {
+      const shape = profile.button_shape || profile.button_style;
+      if (shape === "underline") return { backgroundColor: "transparent", borderBottom: `2px solid ${accentColor}`, borderRadius: 0, paddingLeft: 0, paddingRight: 0 };
+      if (shape === "tag") return { borderLeft: `3px solid ${accentColor}`, textAlign: "left", paddingLeft: 12 };
+      if (shape === "shadow-lift") return { boxShadow: `0 4px 12px ${accentColor}40` };
+      return {};
+    })();
+
+    const hoverFx = getHoverEffectProps(profile.button_hover_effect || "scale", accentColor);
+
     return (
-      <button
+      <motion.button
         key={link.id}
         onClick={() => handleLinkClick(link.id, link.url, link.is_sensitive)}
-        className="flex items-center gap-3 w-full px-5 py-4 text-center font-medium transition-all hover:scale-[1.02] hover:shadow-lg cursor-pointer"
+        whileHover={hoverFx.whileHover as any}
+        whileTap={hoverFx.whileTap as any}
+        transition={hoverFx.transition}
+        className={`flex items-center gap-3 w-full px-5 py-4 text-center font-medium cursor-pointer${hoverFx.className ? ` ${hoverFx.className}` : ""}`}
         style={{
           backgroundColor: isFeatured ? accentColor : cardBg,
           color: isFeatured ? "#ffffff" : cardTextColor,
           borderRadius: btnRadius,
           backdropFilter: "blur(10px)",
+          fontFamily: btnFontFamily,
           ...(isFeatured
             ? { boxShadow: `0 0 20px ${accentColor}40, 0 0 40px ${accentColor}20` }
             : {}),
+          ...extraBtnStyle,
           ...floatLinkStyle,
           ...(animationType === "float" ? { animationDelay: `${index * 0.15}s` } : {}),
         }}
@@ -225,7 +345,7 @@ export function ProfilePage({
             {clicks} {clicks === 1 ? "click" : "clicks"}
           </span>
         )}
-      </button>
+      </motion.button>
     );
   }
 
@@ -250,7 +370,9 @@ export function ProfilePage({
             }
           : { backgroundColor: bg }),
         color: textColor,
-        fontFamily: theme?.font_family
+        fontFamily: profile.font_body && profile.font_body !== "Inter"
+          ? `"${profile.font_body}", sans-serif`
+          : theme?.font_family
           ? `"${theme.font_family}", sans-serif`
           : undefined,
       }}
@@ -292,6 +414,28 @@ export function ProfilePage({
             );
           })}
         </div>
+      )}
+
+      {/* Texture Overlay */}
+      {profile.texture_type && profile.texture_type !== "none" && (
+        <div
+          className="absolute inset-0 pointer-events-none z-[1]"
+          style={{
+            backgroundImage: (() => {
+              switch (profile.texture_type) {
+                case "grain": return `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`;
+                case "dots": return `radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px)`;
+                case "grid": return `linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)`;
+                case "diagonal": return `repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0px, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 8px)`;
+                case "scanlines": return `repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.2) 2px, rgba(0,0,0,0.2) 4px)`;
+                default: return "none";
+              }
+            })(),
+            backgroundSize: profile.texture_type === "dots" ? "16px 16px" : profile.texture_type === "grid" ? "32px 32px" : "auto",
+            opacity: (profile.texture_opacity ?? 20) / 100,
+            mixBlendMode: "overlay",
+          }}
+        />
       )}
 
       {/* Background Overlay */}
@@ -360,25 +504,28 @@ export function ProfilePage({
         )}
         {/* Avatar */}
         <div className="flex flex-col items-center gap-3">
-          {profile.avatar_url ? (
-            <img
-              src={profile.avatar_url}
-              alt={profile.display_name || profile.username}
-              className="h-24 w-24 rounded-full object-cover border-2"
-              style={{ borderColor: accentColor, ...floatAvatarStyle }}
-            />
-          ) : (
-            <div
-              className="h-24 w-24 rounded-full flex items-center justify-center text-3xl font-bold"
-              style={{ backgroundColor: accentColor, ...floatAvatarStyle }}
-            >
-              {(profile.display_name || profile.username)?.[0]?.toUpperCase()}
-            </div>
-          )}
+          <AvatarDisplay
+            profile={profile}
+            accentColor={accentColor}
+            floatStyle={floatAvatarStyle}
+          />
           <div className="text-center">
-            <h1 className="text-xl font-bold">
+            <h1
+              className="text-xl font-bold"
+              style={{
+                fontFamily: profile.font_heading && profile.font_heading !== "Inter"
+                  ? `"${profile.font_heading}", sans-serif`
+                  : undefined,
+              }}
+            >
               {profile.display_name || profile.username}
             </h1>
+
+            {(profile.status_emoji || profile.status_text) && (
+              <p className="text-sm mt-0.5 opacity-70">
+                {profile.status_emoji} {profile.status_text}
+              </p>
+            )}
 
             {/* Live Visitors */}
             <LiveVisitors userId={profile.id} textColor={textColor} />

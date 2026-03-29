@@ -37,6 +37,29 @@ export interface Profile {
   card_shadow: boolean;
   card_max_width: "sm" | "md" | "lg" | "full";
   card_padding: "sm" | "md" | "lg";
+  // Typography
+  font_heading: string;
+  font_body: string;
+  font_buttons: string;
+  // Buttons
+  button_shape: string;
+  button_hover_effect: string;
+  // Avatar
+  avatar_shape: string;
+  avatar_ring_style: string;
+  avatar_ring_color: string | null;
+  avatar_effect: string;
+  // Status
+  status_emoji: string | null;
+  status_text: string | null;
+  // Texture
+  texture_type: string;
+  texture_opacity: number;
+  // Spotlight
+  spotlight_enabled: boolean;
+  spotlight_color: string | null;
+  // Vibe
+  vibe_id: string | null;
   created_at: string;
   updated_at: string;
 }

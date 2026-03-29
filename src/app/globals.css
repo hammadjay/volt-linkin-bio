@@ -312,6 +312,61 @@
   50% { opacity: 0.5; transform: scale(1.5); }
 }
 
+/* ── Button hover effects ── */
+
+/* Shimmer: a light sweep across the button on hover */
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.18) 50%,
+    transparent 60%
+  );
+  transform: translateX(-100%);
+  transition: none;
+}
+.btn-shimmer:hover::after {
+  transform: translateX(100%);
+  transition: transform 0.45s ease;
+}
+
+/* Fill: background sweeps in from the left on hover */
+.btn-fill {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.btn-fill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.12);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: -1;
+}
+.btn-fill:hover::before {
+  transform: scaleX(1);
+}
+
+@keyframes btn-shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-4px); }
+  30% { transform: translateX(4px); }
+  45% { transform: translateX(-3px); }
+  60% { transform: translateX(3px); }
+  75% { transform: translateX(-1px); }
+  90% { transform: translateX(1px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-profile-link-float,
   .animate-profile-avatar-float,
@@ -321,5 +376,10 @@
 
   [style*="profile-particle"] {
     animation: none !important;
+  }
+
+  .btn-shimmer::after,
+  .btn-fill::before {
+    transition: none !important;
   }
 }
